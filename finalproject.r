@@ -52,7 +52,7 @@ caregivers = caregivers %>%
 # acquire geocode data for Santa Clara clients
 
 SCgeolocation = customers[1:10,] %>%
-  filter(LocationName=="Torrance")%>%
+  filter(LocationName=="Torrance")%>% 
   mutate(geolat = geocode(fulladdress)[,1],geolong = geocode(fulladdress)[,2])%>%
   select(CustomerKey,geolat,geolong)
   
