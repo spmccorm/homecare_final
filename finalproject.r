@@ -49,9 +49,12 @@ customers = customers %>%
 caregivers = caregivers %>%
   full_join(x=caregivers, y=locations, by = "LocationKey")
 
-# acquire geocode data for clients
-customers = customers %>%
-  mutate(geolocation = ifelse(LocationName=="Santa Clara", geocode(fulladdress),
-                          NA))
+# acquire geocode data for Santa Clara clients
+
+SCgeolocation = customers[1:10,] %>%
+  filter(LocationName=="Torrance")%>%
+  mutate(geolat = geocode(fulladdress)[,1],geolong = geocode(fulladdress)[,2])%>%
+  select(CustomerKey,geolat,geolong)
+  
 
 
