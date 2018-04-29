@@ -36,7 +36,7 @@ customers = customers %>%
 
 #removing clients without address data   
 
-customers = customers %>%
+customers = customers %>% 
   filter(!CustomerStreetAddr1=="Unknown" | !CustomerCityName=="Unknown"
          | CustomerPostalCode>10000)
 
