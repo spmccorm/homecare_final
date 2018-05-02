@@ -120,9 +120,16 @@ caregiverlocationscosimo = caregiverlocations[1:6000,] %>%
 
 # Sean
 
-caregiverlocationssean = caregiverlocations[6001:12000,] %>%
+caregiverlocationssean = caregiverlocations[6001:7000,] %>% #6001:12000 total
   mutate(geolon = geocode(cgfulladdress)[,1],
          geolat = geocode(cgfulladdress)[,2])
+
+# Sean 2
+
+caregiverlocationssean = caregiverlocationssean %>%
+  mutate(geolon1 = ifelse(is.na(geolon), geocode(cgfulladdress)[,1],geolon),
+         geolat1 = ifelse(is.na(geolat), geocode(cgfulladdress)[,2], geolat))
+write.csv(caregiverlocationssean, file = "caregiverlocationssean.csv")
 
 # Bruce
 
