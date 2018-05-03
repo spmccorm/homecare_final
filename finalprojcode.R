@@ -126,9 +126,14 @@ caregiverlocationssean = caregiverlocations[6001:7000,] %>% #6001:12000 total
 
 # Sean 2
 
+
+caregiverlocationssean = read.csv("caregiverlocationssean.csv")
+
 caregiverlocationssean = caregiverlocationssean %>%
-  mutate(geolon1 = ifelse(is.na(geolon), geocode(cgfulladdress)[,1],geolon),
-         geolat1 = ifelse(is.na(geolat), geocode(cgfulladdress)[,2], geolat))
+  mutate(geolon2 = ifelse(is.na(geolon), geocode(cgfulladdress)[,1],geolon),
+         geolat2 = ifelse(is.na(geolat), geocode(cgfulladdress)[,2], geolat))
+
+
 write.csv(caregiverlocationssean, file = "caregiverlocationssean.csv")
 
 # Bruce
