@@ -111,49 +111,22 @@ caregiverlocations = unique(caregiverlocations)
 customerlocations = unique(customerlocations)
 
 # running geocode function
+  # as the following functions proved to be unsuccessful when run
+  # in large batches, we extracted the customer and caregiver address data
+  # (after extensive cleaning) and used an online resource to derive 
+  # geo coordinates
 
-# Cosimo
+    # caregivers
 
-caregiverlocationscosimo = caregiverlocations[1:6000,] %>%
+caregiverlocations = caregiverlocations %>%
   mutate(geolon = geocode(cgfulladdress)[,1],
          geolat = geocode(cgfulladdress)[,2])
 
-# Sean
-
-caregiverlocationssean = caregiverlocations[6001:7000,] %>% #6001:12000 total
-  mutate(geolon = geocode(cgfulladdress)[,1],
-         geolat = geocode(cgfulladdress)[,2])
-
-# Sean 2
-
-
-caregiverlocationssean = read.csv("caregiverlocationssean.csv")
-
-caregiverlocationssean = caregiverlocationssean %>%
-  mutate(geolon2 = ifelse(is.na(geolon), geocode(cgfulladdress)[,1],geolon),
-         geolat2 = ifelse(is.na(geolat), geocode(cgfulladdress)[,2], geolat))
-
-
-write.csv(caregiverlocationssean, file = "caregiverlocationssean.csv")
-
-# Bruce
-
-caregiverlocationsbruce = caregiverlocations[12001:18000,] %>%
-  mutate(geolon = geocode(cgfulladdress)[,1],
-         geolat = geocode(cgfulladdress)[,2])
-
-# Lisi
-
-caregiverlocationslisi = caregiverlocations[18001:24000,] %>%
-  mutate(geolon = geocode(cgfulladdress)[,1],
-         geolat = geocode(cgfulladdress)[,2])
-
-# Della
-
-caregiverlocationsdella = caregiverlocations[24001:24964,] %>%
-  mutate(geolon = geocode(cgfulladdress)[,1],
-         geolat = geocode(cgfulladdress)[,2])
+    # customers  
 
 customerlocations = customerlocations %>%
   mutate(geolon = geocode(customerfulladdress)[,1],
          geolat = geocode(customerfulladdress)[,2])
+
+
+
