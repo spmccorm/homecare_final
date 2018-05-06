@@ -118,15 +118,18 @@ customerlocations = unique(customerlocations)
 
     # caregivers
 
-caregiverlocations = caregiverlocations %>%
+"caregiverlocations = caregiverlocations %>%
   mutate(geolon = geocode(cgfulladdress)[,1],
-         geolat = geocode(cgfulladdress)[,2])
+         geolat = geocode(cgfulladdress)[,2])"
+
+write.csv(caregiverlocations, file = "caregiverlocations.csv")
 
     # customers  
 
-customerlocations = customerlocations %>%
+"customerlocations = customerlocations %>%
   mutate(geolon = geocode(customerfulladdress)[,1],
-         geolat = geocode(customerfulladdress)[,2])
+         geolat = geocode(customerfulladdress)[,2])"
 
+write.csv(customerlocations, file = "customerlocations.csv")
 
 
