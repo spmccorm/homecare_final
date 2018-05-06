@@ -161,8 +161,17 @@ shifts = shifts %>%
   filter(!is.na(customerlat)) %>%
   filter(!is.na(employeelon))
 
+# Calculate distances from geocode data using the "Haversine Formula"
 
+Earth_R=3961
 
+dlon = shifts$customerlon - shifts$employeelon 
+dlat = shifts$customerlat - shifts$employeelat 
+a = (sin(dlat/2))^2 + cos(shifts$customerlat) * cos(shifts$employeelat) * (sin(dlon/2))^2 
+c = 2 * atan2( sqrt(a), sqrt(1-a) ) 
+d = Earth_R * c #where Earth_R is the radius of the Earth
+
+d
 # group data (determing CLV, tenure/length of stay, average revenue per month)
 
 
