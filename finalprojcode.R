@@ -2,6 +2,8 @@ library(dplyr)
 library(tidyverse)
 library(lubridate)
 library(ggmap)
+library(geosphere)
+#install.packages("geosphere")
 #devtools::install_github("dkahle/ggmap")
 #https://developers.google.com/maps/documentation/geocoding/get-api-key
 #https://stackoverflow.com/questions/36175529/getting-over-query-limit-after-one-request-with-geocode?utm_medium=organic&utm_source=google_rich_qa&utm_campaign=google_rich_qa
@@ -159,19 +161,27 @@ shifts = shifts %>%
 
 shifts = shifts %>%
   filter(!is.na(customerlat)) %>%
-  filter(!is.na(employeelon))
+  filter(!is.na(employeelon)) %>%
+  filter(employeelat != "") %>%
+  arrange(employeelat)
 
 # Calculate distances from geocode data using the "Haversine Formula"
 
-Earth_R=3961
-
+# This webside explains the calculation of the haversine distance
+    #https://andrew.hedges.name/experiments/haversine/
+"Earth_R=3961
 dlon = shifts$customerlon - shifts$employeelon 
 dlat = shifts$customerlat - shifts$employeelat 
-a = (sin(dlat/2))^2 + cos(shifts$customerlat) * cos(shifts$employeelat) * (sin(dlon/2))^2 
+a = (sin(dlat/2))^2 + cos(shifts$employeelat) * cos(shifts$customerlat) * (sin(dlon/2))^2 
 c = 2 * atan2( sqrt(a), sqrt(1-a) ) 
-d = Earth_R * c #where Earth_R is the radius of the Earth
+d = Earth_R * c #where Earth_R is the radius of the Earth"
 
-d
-# group data (determing CLV, tenure/length of stay, average revenue per month)
+shifts = shifts %>% 
+  mutate(Distance = distHaversine(p1 = cbind(shifts$employeelon, shifts$employeelat), 
+                       p2=cbind(shifts$customerlon,shifts$customerlat))*0.000621371)
+
+# Export shift data for use in applications and analysis script
+
+write.csv(shifts, "shifts.csv")
 
 
