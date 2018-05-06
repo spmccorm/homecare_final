@@ -146,7 +146,23 @@ customerlocations = unique(customerlocations)
 customerlocations = read.csv("customergeocodes.csv", fileEncoding = "UTF-8-BOM")
 caregiverlocations = read.csv("caregivergeocodes.csv", fileEncoding = "UTF-8-BOM")
 
-# filter out lost caregivers and clients from shifts table
+# Connecting geocode data to shifts table
+
+shifts = shifts %>%
+  left_join(x=shifts,y=caregiverlocations, by="EmployeeKey")
+
+shifts = shifts %>%
+  left_join(x=shifts, y=customerlocations,by="CustomerKey")
+
+# Removing customers & caregivers that did not have "clean" 
+    # addresses (no geocodes found) 
+
+shifts = shifts %>%
+  filter(!is.na(customerlat)) %>%
+  filter(!is.na(employeelon))
+
+
+
 # group data (determing CLV, tenure/length of stay, average revenue per month)
 
 
