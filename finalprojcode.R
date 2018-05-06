@@ -40,6 +40,19 @@ customers = customers %>%
                                        CustomerStateCode, CustomerPostalCode), 
         sep=", ",remove = F)
 
+shifts$EmployeeCityName = as.character(shifts$EmployeeCityName)
+shifts$EmployeeStreetAddr1 = as.character(shifts$EmployeeStreetAddr1)
+shifts$EmployeeStateCode = as.character(shifts$EmployeeStateCode)
+shifts$EmployeePostalCode = as.character(shifts$EmployeePostalCode)
+
+caregivers = caregivers %>%
+  unite(col = "cgfulladdress", c(EmployeeStreetAddr1,
+                                 EmployeeCityName,
+                                 EmployeeStateCode,
+                                EmployeePostalCode),sep = ", ",
+        remove=F)
+
+
 #removing clients without address data
 
 customers = customers %>%
@@ -47,6 +60,8 @@ customers = customers %>%
            !is.na(CustomerStreetAddr1) | !is.na(CustomerCityName)
          | CustomerPostalCode>10000, Birthday>ymd("1900,1,1"), 
          CustomerGender == "M" | CustomerGender =="F" )
+
+
 
 # combining location data to shift table
 
@@ -74,10 +89,7 @@ shifts = shifts %>%
   full_join(x=shifts, y=caregivers, by="EmployeeKey") %>%
   filter(EmployeeKey>10000)
 
-shifts$EmployeeCityName = as.character(shifts$EmployeeCityName)
-shifts$EmployeeStreetAddr1 = as.character(shifts$EmployeeStreetAddr1)
-shifts$EmployeeStateCode = as.character(shifts$EmployeeStateCode)
-shifts$EmployeePostalCode = as.character(shifts$EmployeePostalCode)
+# removes shifts that do not have valid CG addresses
 
 shifts = shifts %>%
   filter(EmployeeStreetAddr1 !="Unknown") %>%
@@ -85,12 +97,6 @@ shifts = shifts %>%
   filter(EmployeeStateCode!="Unknown") %>%
   filter(EmployeePostalCode!="Unknown")
 
-# concatenating caregiver address information
-
-shifts = shifts %>%
-  unite(col = "cgfulladdress", c(CustomerStreetAddr1,CustomerCityName, 
-                                 CustomerStateCode, CustomerPostalCode), 
-        sep=", ",remove = F)
 
 # extracting 2017 shift data
 
@@ -102,7 +108,9 @@ shifts = shifts %>%
 # Extracting list of caregivers and clients in order to find geolocation
 
 caregiverlocations = shifts %>%
-  select(EmployeeKey, cgfulladdress)
+  select(EmployeeKey, EmployeeStreetAddr1,
+         EmployeeCityName, EmployeeStateCode,
+         EmployeePostalCode)
 
 customerlocations = shifts %>% 
   select(CustomerKey, customerfulladdress)
@@ -122,14 +130,23 @@ customerlocations = unique(customerlocations)
   mutate(geolon = geocode(cgfulladdress)[,1],
          geolat = geocode(cgfulladdress)[,2])"
 
-write.csv(caregiverlocations, file = "caregiverlocations.csv")
-
-    # customers  
+    # customers
 
 "customerlocations = customerlocations %>%
   mutate(geolon = geocode(customerfulladdress)[,1],
          geolat = geocode(customerfulladdress)[,2])"
 
-write.csv(customerlocations, file = "customerlocations.csv")
+  # writing address data to csvs so we can get geocodes 
+
+#write.csv(customerlocations, file = "customerlocations.csv")
+#write.csv(caregiverlocations, file = "caregiverlocations.csv")
+
+# importing collected geocodes
+
+customerlocations = read.csv("customergeocodes.csv")
+caregiverlocations = read.csv("caregivergeocodes.csv")
+
+# filter out lost caregivers and clients from shifts table
+# group data (determing CLV, tenure/length of stay, average revenue per month)
 
 
