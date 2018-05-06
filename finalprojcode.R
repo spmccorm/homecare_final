@@ -143,8 +143,8 @@ customerlocations = unique(customerlocations)
 
 # importing collected geocodes
 
-customerlocations = read.csv("customergeocodes.csv")
-caregiverlocations = read.csv("caregivergeocodes.csv")
+customerlocations = read.csv("customergeocodes.csv", fileEncoding = "UTF-8-BOM")
+caregiverlocations = read.csv("caregivergeocodes.csv", fileEncoding = "UTF-8-BOM")
 
 # filter out lost caregivers and clients from shifts table
 # group data (determing CLV, tenure/length of stay, average revenue per month)
