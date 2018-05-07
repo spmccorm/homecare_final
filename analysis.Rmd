@@ -14,18 +14,9 @@ library(geosphere)
 
 shifts = read.csv("shifts.csv")
 
-# This webside explains the calculation of the haversine distance
-    #https://andrew.hedges.name/experiments/haversine/
-"Earth_R=3961
-dlon = shifts$customerlon - shifts$employeelon 
-dlat = shifts$customerlat - shifts$employeelat 
-a = (sin(dlat/2))^2 + cos(shifts$employeelat) * cos(shifts$customerlat) * (sin(dlon/2))^2 
-c = 2 * atan2( sqrt(a), sqrt(1-a) ) 
-d = Earth_R * c #where Earth_R is the radius of the Earth"
-
 shifts = shifts %>% 
-  mutate(Distance = distHaversine(p1 = cbind(shifts$employeelon,shifts$employeelat),                                  p2=cbind(shifts$customerlon,shifts$customerlat))*0.000621371) %>%
-  filter(Distance < 100)
+  mutate(Distance = distHaversine(p1 = cbind(shifts$employeelon,shifts$employeelat),                              p2=cbind(shifts$customerlon,shifts$customerlat))*0.000621371) %>%
+  filter(Distance < 50)
 
 cgdistance = shifts %>%
   group_by(EmployeeKey) %>%

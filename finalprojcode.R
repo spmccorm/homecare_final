@@ -3,11 +3,6 @@ library(tidyverse)
 library(lubridate)
 library(ggmap)
 library(geosphere)
-#install.packages("geosphere")
-#devtools::install_github("dkahle/ggmap")
-#https://developers.google.com/maps/documentation/geocoding/get-api-key
-#https://stackoverflow.com/questions/36175529/getting-over-query-limit-after-one-request-with-geocode?utm_medium=organic&utm_source=google_rich_qa&utm_campaign=google_rich_qa
-#register_google(key = "AIzaSyArX9t9nSUl4E9es8qRald_HNlcc8VeLJo")
 
 # loading the data
 
@@ -69,13 +64,13 @@ customers = customers %>%
 
 names(shifts)[21] = paste("LocationKey")
 shifts = shifts %>%
-  full_join(x=shifts, y=locations, by = "LocationKey")
+  left_join(x=shifts, y=locations, by = "LocationKey")
 
 # Connecting customer information to shift table
 shifts = shifts %>%
   filter(!is.na(LocationName))
 shifts = shifts %>%
-  full_join(x=shifts, y=customers, by="CustomerKey")
+  left_join(x=shifts, y=customers, by="CustomerKey")
 
 # removing shifts that do not have a valid customer
 
@@ -88,7 +83,7 @@ shifts = shifts %>%
 names(shifts)[4] = paste("EmployeeKey")
 
 shifts = shifts %>%
-  full_join(x=shifts, y=caregivers, by="EmployeeKey") %>%
+  left_join(x=shifts, y=caregivers, by="EmployeeKey") %>%
   filter(EmployeeKey>10000)
 
 # removes shifts that do not have valid CG addresses
@@ -179,7 +174,7 @@ d = Earth_R * c #where Earth_R is the radius of the Earth"
 shifts = shifts %>% 
   mutate(Distance = distHaversine(p1 = cbind(shifts$employeelon, shifts$employeelat), 
                        p2=cbind(shifts$customerlon,shifts$customerlat))*0.000621371) %>%
-  filter(Distance < 100)
+  filter(Distance < 50)
 
 # calculating average distance from cg to their clients
 
@@ -192,19 +187,35 @@ shifts = shifts %>%
 
 # calculating Lifetime Value of Customers and Caregivers
 
-cgvalue=shifts %>%
+cgLTV=shifts %>%
   group_by(EmployeeKey) %>%
-  summarise(cgtotalvalue=sum(Revenue))
+  summarise(cgLTV=sum(Revenue))
 
 shifts = shifts %>%
-  left_join(x=shifts, y=cgvalue, by="EmployeeKey")
+  left_join(x=shifts, y=cgLTV, by="EmployeeKey")
 
-cusvalue= shifts %>%
+customerLTV= shifts %>%
   group_by(CustomerKey) %>%
-  summarise(custotalvalue=sum(Revenue))
+  summarise(customerLTV=sum(Revenue))
 
 shifts = shifts %>%
-  left_join(x=shifts, y=cusvalue, by="CustomerKey")
+  left_join(x=shifts, y=customerLTV, by="CustomerKey")
+
+#calculating length of stay in order to derive average monthly revenue
+
+lengthofstay = shifts %>%
+  group_by(CustomerKey) %>%
+  summarise(startdate = min(DateKeyService), enddate = max(DateKeyService)) %>%
+  mutate(lengthofstay = as.numeric(enddate - startdate +1)) %>%
+  select(CustomerKey, lengthofstay)
+
+shifts = shifts %>%
+  left_join(x=shifts, y=lengthofstay, by = "CustomerKey")
+
+#calculating average monthly revenue per customer
+
+shifts = shifts %>%
+  mutate(avgmonthlyrev = (customerLTV/lengthofstay)*30)
 
 # Export shift data for use in applications and analysis script
 

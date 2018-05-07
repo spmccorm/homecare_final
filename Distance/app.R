@@ -41,7 +41,17 @@ walnutcreek = retry(qmap("Walnut Creek, CA", zoom=11, maptype="hybrid"),maxError
 santaclara = retry(qmap("Santa Clara, CA", zoom=11, maptype="hybrid"),maxErrors = 20,sleep=1)
 pasadena = retry(qmap("Pasadena, CA", zoom=11, maptype="hybrid"),maxErrors = 20,sleep=1)
 
+(santaclara + geom_point(data=filter(shifts, LocationName=="Santa Clara"), 
+                        aes(x=employeelon, y=employeelat,color
+                            = avgdist),
+                        size=2)+
+  scale_color_gradient(low = "white", high="violetred4", name="Avg. Distance")+
+  theme(legend.position = c(.11,.875)))
 
+locationslist = shifts %>%
+  group_by(LocationName) %>%
+  summarise(count = n())
+locationslist$LocationName = as.character(locationslist$LocationName)
 
 ui = fluidPage(
   titlePanel(title= "24Hr HomeCare Statistical Visualizations",
@@ -51,21 +61,10 @@ ui = fluidPage(
       helpText("24Hr HomeCare has 12 branch locations, and our metrics are
                displayed on the branch level"),
       selectInput(inputId = "branch",
-                  choices=c("Santa Clara",
-                            "Culver City",
-                            "Dallas",
-                            "Encino",
-                            "Fullerton",
-                            "Irvine",
-                            "Pasadena",
-                            "San Diego",
-                            "Carlsbad",
-                            "Scottsdale",
-                            "Torrance",
-                            "Walnut Creek"),selected = "Torrance",
+                  choices=locationslist[,1],selected = "Torrance",
                   label = "Choose a Branch Location:"),width=2
     ),
-        # Show a plot of the generated distribution
+        
       mainPanel(helpText("The graphs below depict the location of Caregivers and Customers. The Caregiver
                          graph also shows the average distance the caregiver travels to the client's home,
                          while the Customer graph shows the average monthly revenue that the customer
@@ -117,15 +116,17 @@ server <- function(input, output) {
                           "Pasadena"="Pasadena Caregiver Locations",
                           "Walnut Creek"="Walnut Creek Caregiver Locations")
    
-    
-    branchmap + geom_point(data=shifts()[shifts()$LocationName==input$branch,], 
+  
+
+(branchmap + geom_point(data=filter(shifts(), LocationName==input$branch), 
                            aes(x=employeelon, y=employeelat,color
                            = avgdist),
-                           size=4)+
+                           size=2)+
       scale_color_gradient(low = "white", high="violetred4", name="Avg. Distance")+
       theme(legend.position = c(.11,.875))+
       ggtitle(cgtitle)+
-      theme(plot.title = element_text(size = 20,family = "calibri"))
+      theme(plot.title = element_text(size = 20,family = "calibri")) )
+    
     
   })
   
@@ -159,31 +160,31 @@ server <- function(input, output) {
                        "Pasadena"="Pasadena Customer Locations",
                        "Walnut Creek"="Walnut Creek Customer Locations")
     
-    branchmap + geom_point(data=shifts()[shifts()$LocationName==input$branch,], 
-                           aes(x=customerlon, y=customerlat,color = monthlyrev),
-                           size=4)+
+    (branchmap + geom_point(data=filter(shifts(), LocationName==input$branch), 
+                           aes(x=customerlon, y=customerlat,color = avgmonthlyrev),
+                           size=2)+
       scale_color_gradient(low = "white", high="chartreuse4", name="Avg. Monthly Rev")+
       theme(legend.position = c(.11,.875))+
       ggtitle(customertitle)+
-      theme(plot.title = element_text(size = 20, family = "Calibri"))
+      theme(plot.title = element_text(size = 20, family = "Calibri")))
     
       })
   
     
-  output$distances = renderPlot({
-    ggplot(data=shifts()[shifts()$LocationName==input$branch,], aes(x=avgdist))+
+  output$distances = (renderPlot({
+    ggplot(data=filter(shifts(), LocationName==input$branch), aes(x=avgdist))+
       geom_histogram(fill="violetred4")+
       ggtitle("Histogram of Average Distance Traveled by Caregivers")+
       xlab("Average Distance")+
       ylab("Count")
-    })
-  output$monthlyrevs = renderPlot({
-    ggplot(data=shifts()[shifts()$LocationName==input$branch,], aes(x=monthlyrev))+
+    }))
+  output$monthlyrevs = (renderPlot({
+    ggplot(data=filter(shifts(), LocationName==input$branch), aes(x=avgmonthlyrev))+
       geom_histogram(fill="chartreuse4")+
       ggtitle("Histogram of Average Customer Monthly Revenue")+
       xlab("Average Revenue")+
       ylab("Count")
-  })
+  }))
   
     }
 
