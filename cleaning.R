@@ -37,6 +37,7 @@ customers$FirstCarelogDate = mdy(customers$FirstCarelogDate)
 customers$LastCarelogDate = mdy(customers$LastCarelogDate)
 customers$CustomerDeceaseDate = mdy(customers$CustomerDeceaseDate)
 customers$ClientDeactivatedDate = mdy(customers$ClientDeactivatedDate)
+shifts$DateKeyService = ymd(shifts$DateKeyService)
 
 customers = customers %>%
   unite(col = "customerfulladdress", c(CustomerStreetAddr1,CustomerCityName, 
@@ -167,15 +168,6 @@ shifts = shifts %>%
   arrange(employeelat)
 
 # Calculate distances from geocode data using the "Haversine Formula"
-
-# This webside explains the calculation of the haversine distance
-    #https://andrew.hedges.name/experiments/haversine/
-"Earth_R=3961
-dlon = shifts$customerlon - shifts$employeelon 
-dlat = shifts$customerlat - shifts$employeelat 
-a = (sin(dlat/2))^2 + cos(shifts$employeelat) * cos(shifts$customerlat) * (sin(dlon/2))^2 
-c = 2 * atan2( sqrt(a), sqrt(1-a) ) 
-d = Earth_R * c #where Earth_R is the radius of the Earth"
 
 # Export shift data for use in applications and analysis script
 

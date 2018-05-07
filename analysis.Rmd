@@ -24,8 +24,7 @@ c = 2 * atan2( sqrt(a), sqrt(1-a) )
 d = Earth_R * c #where Earth_R is the radius of the Earth"
 
 shifts = shifts %>% 
-  mutate(Distance = distHaversine(p1 = cbind(shifts$employeelon, shifts$employeelat), 
-                       p2=cbind(shifts$customerlon,shifts$customerlat))*0.000621371) %>%
+  mutate(Distance = distHaversine(p1 = cbind(shifts$employeelon,shifts$employeelat),                                  p2=cbind(shifts$customerlon,shifts$customerlat))*0.000621371) %>%
   filter(Distance < 100)
 
 cgdistance = shifts %>%
