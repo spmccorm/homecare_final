@@ -6,53 +6,43 @@ library(ggmap)
 library(lubridate)
 library(futile.logger)
 library(utils)
-library(gridExtra)
 
-    retry <- function(expr, isError=function(x) "try-error" %in% class(x), maxErrors=5, sleep=0) {
-      attempts = 0
-      retval = try(eval(expr))
-      while (isError(retval)) {
-        attempts = attempts + 1
-        if (attempts >= maxErrors) {
-          msg = sprintf("retry: too many retries [[%s]]", capture.output(str(retval)))
-          flog.fatal(msg)
-          stop(msg)
-        } else {
-          msg = sprintf("retry: error in attempt %i/%i [[%s]]", attempts, maxErrors, 
-                        capture.output(str(retval)))
-          flog.error(msg)
-          warning(msg)
-        }
-        if (sleep > 0) Sys.sleep(sleep)
-        retval = try(eval(expr))
-      }
-      return(retval)
+retry <- function(expr, isError=function(x) "try-error" %in% class(x), maxErrors=5, sleep=0) {
+  attempts = 0
+  retval = try(eval(expr))
+  while (isError(retval)) {
+    attempts = attempts + 1
+    if (attempts >= maxErrors) {
+      msg = sprintf("retry: too many retries [[%s]]", capture.output(str(retval)))
+      flog.fatal(msg)
+      stop(msg)
+    } else {
+      msg = sprintf("retry: error in attempt %i/%i [[%s]]", attempts, maxErrors, 
+                    capture.output(str(retval)))
+      flog.error(msg)
+      warning(msg)
     }
+    if (sleep > 0) Sys.sleep(sleep)
+    retval = try(eval(expr))
+  }
+  return(retval)
+}
 
-shifts = read.csv("shifts.csv")
-
-# calculating distance between client and caregiver
-
-locations = shifts %>%
-  group_by(LocationName)%>%
-  summarise(count = n())
-
-torrance = retry(qmap("Torrance", zoom=10, maptype="hybrid"),maxErrors=10,sleep=1)
-culvercity = retry(qmap("Culver City, CA", zoom=11, maptype="hybrid"),maxErrors = 10,sleep=1)
-dallas = retry(qmap("Dallas, TX", zoom=10, maptype="hybrid"),maxErrors = 10,sleep=1)
-scottsdale = retry(qmap("Scottsdale, AZ", zoom=10, maptype="hybrid"),maxErrors = 10,sleep=1)
-encino = retry(qmap("encino, CA", zoom=11, maptype="hybrid"),maxErrors = 10,sleep=1)
-irvine = retry(qmap("Irvine, CA", zoom=11, maptype="hybrid"),maxErrors = 10,sleep=1)
-fullerton = retry(qmap("Fullerton, CA", zoom=11, maptype="hybrid"),maxErrors = 10,sleep=1)
-sandiego = retry(qmap("San Diego, CA", zoom=11, maptype="hybrid"),maxErrors = 10,sleep=1)
-carlsbad = retry(qmap("Carlsbad, CA", zoom=11, maptype="hybrid"),maxErrors = 10,sleep=1)
-walnutcreek = retry(qmap("Walnut Creek, CA", zoom=11, maptype="hybrid"),maxErrors = 10,sleep=1)
-santaclara = retry(qmap("Santa Clara, CA", zoom=11, maptype="hybrid"),maxErrors = 10,sleep=1)
-pasadena = retry(qmap("Pasadena, CA", zoom=11, maptype="hybrid"),maxErrors = 10,sleep=1)
+torrance = retry(qmap("Torrance", zoom=10, maptype="hybrid"),maxErrors=20,sleep=1)
+culvercity = retry(qmap("Culver City, CA", zoom=11, maptype="hybrid"),maxErrors = 20,sleep=1)
+dallas = retry(qmap("Dallas, TX", zoom=10, maptype="hybrid"),maxErrors = 20,sleep=1)
+scottsdale = retry(qmap("Scottsdale, AZ", zoom=10, maptype="hybrid"),maxErrors = 20,sleep=1)
+encino = retry(qmap("encino, CA", zoom=11, maptype="hybrid"),maxErrors = 20,sleep=1)
+irvine = retry(qmap("Irvine, CA", zoom=11, maptype="hybrid"),maxErrors = 20,sleep=1)
+fullerton = retry(qmap("Fullerton, CA", zoom=11, maptype="hybrid"),maxErrors = 20,sleep=1)
+sandiego = retry(qmap("San Diego, CA", zoom=11, maptype="hybrid"),maxErrors = 20,sleep=1)
+carlsbad = retry(qmap("Carlsbad, CA", zoom=11, maptype="hybrid"),maxErrors = 20,sleep=1)
+walnutcreek = retry(qmap("Walnut Creek, CA", zoom=11, maptype="hybrid"),maxErrors = 20,sleep=1)
+santaclara = retry(qmap("Santa Clara, CA", zoom=11, maptype="hybrid"),maxErrors = 20,sleep=1)
+pasadena = retry(qmap("Pasadena, CA", zoom=11, maptype="hybrid"),maxErrors = 20,sleep=1)
 
 
 
-# Define UI for application that draws a histogram
 ui = fluidPage(
   titlePanel(title= "24Hr HomeCare Statistical Visualizations",
              windowTitle="24HrHomeCareStats"),
@@ -61,8 +51,19 @@ ui = fluidPage(
       helpText("24Hr HomeCare has 12 branch locations, and our metrics are
                displayed on the branch level"),
       selectInput(inputId = "branch",
-                  choices=locations$LocationName,
-                  label = "Choose a Branch Location:")
+                  choices=c("Santa Clara",
+                            "Culver City",
+                            "Dallas",
+                            "Encino",
+                            "Fullerton",
+                            "Irvine",
+                            "Pasadena",
+                            "San Diego",
+                            "Carlsbad",
+                            "Scottsdale",
+                            "Torrance",
+                            "Walnut Creek"),selected = "Torrance",
+                  label = "Choose a Branch Location:"),width=2
     ),
         # Show a plot of the generated distribution
       mainPanel(helpText("The graphs below depict the location of Caregivers and Customers. The Caregiver
@@ -70,19 +71,22 @@ ui = fluidPage(
                          while the Customer graph shows the average monthly revenue that the customer
                          generates"),
         fluidRow(
-        splitLayout(cellWidths=c("50%", "50%"),plotOutput(outputId = "cgmap", height=600,width=600),
-                plotOutput(outputId = "clientmap", height=600,width=600))))
-   )
+        splitLayout(cellWidths=c("50%", "50%"),plotOutput(outputId = "cgmap", height=640,width=640),
+                plotOutput(outputId = "clientmap", height=640,width=640))),
+        fluidRow(
+          splitLayout(cellWidths=c("50%", "50%"),plotOutput(outputId = "distances"),
+                      plotOutput(outputId = "monthlyrevs")))
+   ))
 )
 
-# Define server logic required to draw a histogram
 server <- function(input, output) {
-   
-shifts = reactive({
-  shift=read.csv("shifts.csv")
-})
   
-  # calculating distance between client and caregiver
+  shifts = reactive({
+    shifts=read.csv("shifts.csv",fileEncoding = "UTF-8-BOM")
+  })
+  
+
+
 
   output$cgmap=renderPlot({
     
@@ -116,7 +120,7 @@ shifts = reactive({
     
     branchmap + geom_point(data=shifts()[shifts()$LocationName==input$branch,], 
                            aes(x=employeelon, y=employeelat,color
-                           = monthlyrev),
+                           = avgdist),
                            size=4)+
       scale_color_gradient(low = "white", high="violetred4", name="Avg. Distance")+
       theme(legend.position = c(.11,.875))+
@@ -161,10 +165,28 @@ shifts = reactive({
       scale_color_gradient(low = "white", high="chartreuse4", name="Avg. Monthly Rev")+
       theme(legend.position = c(.11,.875))+
       ggtitle(customertitle)+
-      theme(plot.title = element_text(size = 20, family = "calibri"))
+      theme(plot.title = element_text(size = 20, family = "Calibri"))
+    
       })
+  
+    
+  output$distances = renderPlot({
+    ggplot(data=shifts()[shifts()$LocationName==input$branch,], aes(x=avgdist))+
+      geom_histogram(fill="violetred4")+
+      ggtitle("Histogram of Average Distance Traveled by Caregivers")+
+      xlab("Average Distance")+
+      ylab("Count")
+    })
+  output$monthlyrevs = renderPlot({
+    ggplot(data=shifts()[shifts()$LocationName==input$branch,], aes(x=monthlyrev))+
+      geom_histogram(fill="chartreuse4")+
+      ggtitle("Histogram of Average Customer Monthly Revenue")+
+      xlab("Average Revenue")+
+      ylab("Count")
+  })
+  
     }
 
-# Run the application 
 shinyApp(ui = ui, server = server)
+
 

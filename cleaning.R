@@ -4,12 +4,6 @@ library(lubridate)
 library(ggmap)
 library(geosphere)
 
-#install.packages("geosphere")
-#devtools::install_github("dkahle/ggmap")
-#https://developers.google.com/maps/documentation/geocoding/get-api-key
-#https://stackoverflow.com/questions/36175529/getting-over-query-limit-after-one-request-with-geocode?utm_medium=organic&utm_source=google_rich_qa&utm_campaign=google_rich_qa
-#register_google(key = "AIzaSyArX9t9nSUl4E9es8qRald_HNlcc8VeLJo")
-
 # loading the data
 
 shifts1 = read.csv("shifts1.csv", fileEncoding = "UTF-8-BOM")
@@ -32,6 +26,8 @@ shifts$Labor = as.numeric(as.character(shifts$Labor))
 shifts = shifts %>%
   filter(Revenue > 0)
 
+#converting date values using lubridate
+
 customers$Birthday = mdy(customers$Birthday)
 customers$FirstCarelogDate = mdy(customers$FirstCarelogDate)
 customers$LastCarelogDate = mdy(customers$LastCarelogDate)
@@ -39,22 +35,27 @@ customers$CustomerDeceaseDate = mdy(customers$CustomerDeceaseDate)
 customers$ClientDeactivatedDate = mdy(customers$ClientDeactivatedDate)
 shifts$DateKeyService = ymd(shifts$DateKeyService)
 
+#concatenating customer address information into a single field
+
 customers = customers %>%
   unite(col = "customerfulladdress", c(CustomerStreetAddr1,CustomerCityName, 
                                        CustomerStateCode, CustomerPostalCode), 
         sep=", ",remove = F)
+
+#converting employee address data from factor to character
 
 shifts$EmployeeCityName = as.character(shifts$EmployeeCityName)
 shifts$EmployeeStreetAddr1 = as.character(shifts$EmployeeStreetAddr1)
 shifts$EmployeeStateCode = as.character(shifts$EmployeeStateCode)
 shifts$EmployeePostalCode = as.character(shifts$EmployeePostalCode)
 
+#concatenating employee address information into a single field
+
 caregivers = caregivers %>%
   unite(col = "cgfulladdress", c(EmployeeStreetAddr1,
                                  EmployeeCityName,
                                  EmployeeStateCode,
-                                EmployeePostalCode),sep = ", ",
-        remove=F)
+                                EmployeePostalCode),sep = ", ",remove=F)
 
 
 #removing clients without address data
@@ -65,27 +66,26 @@ customers = customers %>%
          | CustomerPostalCode>10000, Birthday>ymd("1900,1,1"), 
          CustomerGender == "M" | CustomerGender =="F" )
 
-
-
-# combining location data to shift table
+#combining location data to shift table
 
 names(shifts)[21] = paste("LocationKey")
 shifts = shifts %>%
   full_join(x=shifts, y=locations, by = "LocationKey")
 
-# Connecting customer information to shift table
+#connecting customer information to shift table
+
 shifts = shifts %>%
   filter(!is.na(LocationName))
 shifts = shifts %>%
   full_join(x=shifts, y=customers, by="CustomerKey")
 
-# removing shifts that do not have a valid customer
+#removing shifts that do not have a valid customer
 
 shifts = shifts %>%
   filter(Birthday>mdy("1,1,1900")) %>%
   filter(!is.na(CustomerKey))
 
-# connecting caregivers to shift table
+#connecting caregivers to shift table
 
 names(shifts)[4] = paste("EmployeeKey")
 
@@ -93,7 +93,7 @@ shifts = shifts %>%
   full_join(x=shifts, y=caregivers, by="EmployeeKey") %>%
   filter(EmployeeKey>10000)
 
-# removes shifts that do not have valid CG addresses
+#removes shifts that do not have valid CG addresses
 
 shifts = shifts %>%
   filter(EmployeeStreetAddr1 !="Unknown") %>%
@@ -101,15 +101,14 @@ shifts = shifts %>%
   filter(EmployeeStateCode!="Unknown") %>%
   filter(EmployeePostalCode!="Unknown")
 
-
-# extracting 2017 shift data
+#extracting 2017 shift data
 
 shifts$DateKeyService = ymd(shifts$DateKeyService)
 
 shifts = shifts %>%
   filter(year(DateKeyService) >= "2017")
 
-# Extracting list of caregivers and clients in order to find geolocation
+#extracting list of caregivers and clients in order to find geolocation
 
 caregiverlocations = shifts %>%
   select(EmployeeKey, EmployeeStreetAddr1,
@@ -122,35 +121,34 @@ customerlocations = shifts %>%
 caregiverlocations = unique(caregiverlocations)
 customerlocations = unique(customerlocations)
 
-# running geocode function
+#running geocode function
   # as the following functions proved to be unsuccessful when run
   # in large batches, we extracted the customer and caregiver address data
   # (after extensive cleaning) and used an online resource to derive 
   # geo coordinates
 
-    # caregivers
+    #caregiver geocode formula that we attempted in R
 
-"caregiverlocations = caregiverlocations %>%
-  mutate(geolon = geocode(cgfulladdress)[,1],
-         geolat = geocode(cgfulladdress)[,2])"
+      "caregiverlocations = caregiverlocations %>%
+        mutate(geolon = geocode(cgfulladdress)[,1],
+               geolat = geocode(cgfulladdress)[,2])"
 
-    # customers
+    #customer geocode formula that we attempted in R
 
-"customerlocations = customerlocations %>%
-  mutate(geolon = geocode(customerfulladdress)[,1],
-         geolat = geocode(customerfulladdress)[,2])"
+      "customerlocations = customerlocations %>%
+        mutate(geolon = geocode(customerfulladdress)[,1],
+               geolat = geocode(customerfulladdress)[,2])"
+#writing address data to csvs so we can get geocodes externally
 
-  # writing address data to csvs so we can get geocodes 
+    #write.csv(customerlocations, file = "customerlocations.csv"")
+    #write.csv(caregiverlocations, file = "caregiverlocations.csv")
 
-#write.csv(customerlocations, file = "customerlocations.csv")
-#write.csv(caregiverlocations, file = "caregiverlocations.csv")
-
-# importing collected geocodes
+#importing collected geocodes
 
 customerlocations = read.csv("customergeocodes.csv", fileEncoding = "UTF-8-BOM")
 caregiverlocations = read.csv("caregivergeocodes.csv", fileEncoding = "UTF-8-BOM")
 
-# Connecting geocode data to shifts table
+#connecting geocode data to shifts table
 
 shifts = shifts %>%
   left_join(x=shifts,y=caregiverlocations, by="EmployeeKey")
@@ -158,7 +156,7 @@ shifts = shifts %>%
 shifts = shifts %>%
   left_join(x=shifts, y=customerlocations,by="CustomerKey")
 
-# Removing customers & caregivers that did not have "clean" 
+#removing customers & caregivers that did not have "clean" 
     # addresses (no geocodes found) 
 
 shifts = shifts %>%
@@ -167,7 +165,7 @@ shifts = shifts %>%
   filter(employeelat != "") %>%
   arrange(employeelat)
 
-# Calculate distances from geocode data using the "Haversine Formula"
+#calculate distances from geocode data using the "Haversine Formula"
 
 shifts = shifts %>% 
   mutate(Distance = distHaversine(p1 = cbind(shifts$employeelon,shifts$employeelat),                                  p2=cbind(shifts$customerlon,shifts$customerlat))*0.000621371) %>%
@@ -180,16 +178,14 @@ cgdistance = shifts %>%
 shifts = shifts %>%
   left_join(x=shifts, y=cgdistance, by= "EmployeeKey")
 
-
-# calculating customer lifetime value
+#calculating customer lifetime value
 
 customerLTV= shifts %>%
   group_by(CustomerKey) %>%
-  summarise(custotalvalue=sum(Revenue))
+  summarise(customerLTV=sum(Revenue))
 
 shifts = shifts %>%
   left_join(x=shifts, y=customerLTV, by="CustomerKey")
-
 
 # calculating length of stay
 
@@ -206,13 +202,12 @@ shifts = shifts %>%
 
 shifts$lengthofstay = as.numeric(shifts$lengthofstay)
 
+#calculating average monthly revenue using length of stay
+
 shifts = shifts %>%
-  mutate(monthlyrev = custotalvalue/lengthofstay*30)
+  mutate(monthlyrev = customerLTV/lengthofstay*30)
 
-
-
-# Export shift data for use in applications and analysis script
+#export shift data for use in application and analysis script
 
 write.csv(shifts, "shifts.csv")
-
 
