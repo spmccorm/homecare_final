@@ -205,7 +205,7 @@ shifts$lengthofstay = as.numeric(shifts$lengthofstay)
 #calculating average monthly revenue using length of stay
 
 shifts = shifts %>%
-  mutate(monthlyrev = customerLTV/lengthofstay*30)
+  mutate(avgmonthlyrev = customerLTV/lengthofstay*30)
 
 #export shift data for use in application and analysis script
 
