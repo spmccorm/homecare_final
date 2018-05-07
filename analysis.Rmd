@@ -1,0 +1,47 @@
+---
+title: "Data Analysis and Visualization"
+author: "Team5"
+date: "May 6, 2018"
+output: word_document
+---
+
+
+## Calculating Lifetime Value of Customers and Caregivers
+```{r setup}
+library(dplyr)
+library(ggplot2)
+library(geosphere)
+
+shifts = read.csv("shifts.csv")
+
+shifts = shifts %>% 
+  mutate(Distance = distHaversine(p1 = cbind(shifts$employeelon, shifts$employeelat), 
+                       p2=cbind(shifts$customerlon,shifts$customerlat))*0.000621371) %>%
+  filter(Distance < 100)
+
+cgdistance = shifts %>%
+  group_by(EmployeeKey) %>%
+  summarise(avgdist = mean(Distance))
+
+shifts = shifts %>%
+  left_join(x=shifts, y=cgdistance, by= "EmployeeKey")
+
+cgvalue=shifts %>%
+  group_by(EmployeeKey) %>%
+  summarise(cgtotalvalue=sum(Revenue))
+
+shifts = shifts %>%
+  left_join(x=shifts, y=cgvalue, by="EmployeeKey")
+
+cusvalue= shifts %>%
+  group_by(CustomerKey) %>%
+  summarise(custotalvalue=sum(Revenue))
+
+shifts = shifts %>%
+  left_join(x=shifts, y=cusvalue, by="CustomerKey")
+
+#average bill and pay rate by location
+#proportion of hours that are OT "laborcostpayOThours"
+
+
+```

@@ -178,7 +178,33 @@ d = Earth_R * c #where Earth_R is the radius of the Earth"
 
 shifts = shifts %>% 
   mutate(Distance = distHaversine(p1 = cbind(shifts$employeelon, shifts$employeelat), 
-                       p2=cbind(shifts$customerlon,shifts$customerlat))*0.000621371)
+                       p2=cbind(shifts$customerlon,shifts$customerlat))*0.000621371) %>%
+  filter(Distance < 100)
+
+# calculating average distance from cg to their clients
+
+cgdistance = shifts %>%
+  group_by(EmployeeKey) %>%
+  summarise(avgdist = mean(Distance))
+
+shifts = shifts %>%
+  left_join(x=shifts, y=cgdistance, by= "EmployeeKey")
+
+# calculating Lifetime Value of Customers and Caregivers
+
+cgvalue=shifts %>%
+  group_by(EmployeeKey) %>%
+  summarise(cgtotalvalue=sum(Revenue))
+
+shifts = shifts %>%
+  left_join(x=shifts, y=cgvalue, by="EmployeeKey")
+
+cusvalue= shifts %>%
+  group_by(CustomerKey) %>%
+  summarise(custotalvalue=sum(Revenue))
+
+shifts = shifts %>%
+  left_join(x=shifts, y=cusvalue, by="CustomerKey")
 
 # Export shift data for use in applications and analysis script
 
