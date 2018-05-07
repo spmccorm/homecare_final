@@ -169,6 +169,48 @@ shifts = shifts %>%
 
 # Calculate distances from geocode data using the "Haversine Formula"
 
+shifts = shifts %>% 
+  mutate(Distance = distHaversine(p1 = cbind(shifts$employeelon,shifts$employeelat),                                  p2=cbind(shifts$customerlon,shifts$customerlat))*0.000621371) %>%
+  filter(Distance < 50)
+
+cgdistance = shifts %>%
+  group_by(EmployeeKey) %>%
+  summarise(avgdist = mean(Distance))
+
+shifts = shifts %>%
+  left_join(x=shifts, y=cgdistance, by= "EmployeeKey")
+
+
+# calculating customer lifetime value
+
+customerLTV= shifts %>%
+  group_by(CustomerKey) %>%
+  summarise(custotalvalue=sum(Revenue))
+
+shifts = shifts %>%
+  left_join(x=shifts, y=customerLTV, by="CustomerKey")
+
+
+# calculating length of stay
+
+lengthofstay = shifts %>%
+  group_by(CustomerKey) %>%
+  summarise(startdate = min(DateKeyService),
+            enddate = max(DateKeyService)) %>%
+  mutate(lengthofstay = (enddate - startdate)+1) %>%
+  filter(lengthofstay >= 0 ) %>%
+  select(CustomerKey, lengthofstay)
+
+shifts = shifts %>%
+  left_join(x=shifts, y=lengthofstay, by="CustomerKey")
+
+shifts$lengthofstay = as.numeric(shifts$lengthofstay)
+
+shifts = shifts %>%
+  mutate(monthlyrev = custotalvalue/lengthofstay*30)
+
+
+
 # Export shift data for use in applications and analysis script
 
 write.csv(shifts, "shifts.csv")
