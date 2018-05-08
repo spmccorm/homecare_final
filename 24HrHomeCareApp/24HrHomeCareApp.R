@@ -71,8 +71,8 @@ ui = fluidPage(
         splitLayout(cellWidths=c("50%", "50%"),plotOutput(outputId = "cgmap", height=640,width=640),
                 plotOutput(outputId = "clientmap", height=640,width=640))),
         fluidRow(
-          splitLayout(cellWidths=c("50%", "50%"),plotOutput(outputId = "distances"),
-                      plotOutput(outputId = "monthlyrevs"))),
+          splitLayout(cellWidths=c("50%", "50%"),plotOutput(outputId = "distances", width=600),
+                      plotOutput(outputId = "monthlyrevs", width=600))),
         plotOutput(outputId = "comparison")
    ))
 )
@@ -176,7 +176,8 @@ server <- function(input, output) {
       ggtitle("Histogram of Average Distance Traveled by Caregivers")+
       xlab("Average Distance")+
       ylab("Count")+
-      theme(plot.title = element_text(size = 20, family = "Calibri"))
+      theme(plot.title = element_text(size = 20, family = "Calibri"))+
+      theme_bw()
     }))
   output$monthlyrevs = (renderPlot({
     ggplot(data=filter(shifts(), LocationName==input$branch), aes(x=avgmonthlyrevcust))+
@@ -184,7 +185,8 @@ server <- function(input, output) {
       ggtitle("Histogram of Average Customer Monthly Revenue")+
       xlab("Average Revenue")+
       ylab("Count")+
-      theme(plot.title = element_text(size = 20, family = "Calibri"))
+      theme(plot.title = element_text(size = 20, family = "Calibri"))+
+      theme_bw()
   }))
 
   
@@ -196,7 +198,8 @@ output$comparison = renderPlot({
     ylab("Distance Traveled (Miles)")+
     ggtitle("Averege Distance Traveled by Caregivers")+
     theme(plot.title = element_text(size = 20, family = "Calibri"))+
-      scale_fill_gradient(low="red", high="blue")
+      scale_fill_gradient(low="white", high="darkblue")+
+    theme_bw()
   
 })
   
