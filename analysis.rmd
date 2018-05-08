@@ -1,0 +1,142 @@
+---
+title: "Data Analysis and Visualization"
+author: "Team5"
+date: "May 6, 2018"
+output: word_document
+---
+
+
+## Calculating Lifetime Value of Customers and Caregivers
+```{r, dpi=300}
+library(dplyr)
+library(ggplot2)
+library(geosphere)
+
+shifts = read.csv("shifts.csv")
+
+
+#average bill and pay rate by location
+#proportion of hours that are OT "laborcostpayOThours"
+#value contribution distribution by gender
+#heatmap: x-location; y-distance; fill=value created
+
+# Histogram: Revenue distribution of different locations
+
+shifts%>%
+  group_by(LocationName)%>%
+  ggplot(aes(x=Revenue,y=..density..))+
+  geom_histogram(bins=20,position = "identity")+facet_wrap(~LocationName)+
+  xlim(0,400)+ylab("")+geom_line(stat = "density",adjust=0.25,col="red")+
+  ggtitle("Revenue Distribution of different branches")
+```
+
+```{r, dpi=300}
+# Revenue distribution by gender
+# Focus on revenue less than 800
+genders = shifts %>%
+  filter(shifts$Revenue < 500)
+
+ggplot(genders, aes(x = Revenue, fill = genders$CustomerGender)) +
+geom_histogram(binwidth = 20, position = "identity", alpha = 0.4)+
+  ggtitle("Distribution of Revenues by Genders") + theme(plot.subtitle = element_text(vjust = 1), 
+    plot.caption = element_text(vjust = 1)) +labs(fill = "Customer Gender")
+```
+
+```{r, dpi=300}
+# heatmap: Revenue distribution by Location and Distance to travel
+group = shifts %>%
+  mutate (group=ifelse(Distance<=5,"<5",
+                       ifelse(Distance<=10,"5~10",
+                              ifelse(Distance<=15,"10~15",
+                                     ifelse(Distance<=20,"15~20",
+                                            ifelse(Distance<=25,"20~25",
+                                                   ifelse(Distance<=30,"25~30",
+                                                          ifelse(Distance<=35,"30~35",
+                                                              ifelse(Distance<=40,"35~40",
+                                                 ifelse(Distance<=45,"40~45","45~50"))))))))))
+group$group=as.factor(group$group)
+lev=levels(group$group)
+lev
+lev=lev[c(1,10,2:9)]
+group$group=factor(group$group,levels=lev)
+sum=group %>%
+  group_by(group,LocationName)%>%
+  summarise(sum=sum(Revenue))
+ggplot(sum,aes(x=LocationName,y=factor(group)))+
+  geom_tile(aes(fill=sum))+
+  scale_fill_gradient(low="white",high="#660000")+
+  ylab("Distance to travel (mile)")+
+  xlab("Location")+
+  ggtitle("Revenue by location and distance to travel")
+```
+
+```{r, dpi=300}
+# Overtime Hours by location
+
+shifts%>%
+  group_by(LocationName)%>%summarise(ot=sum(GrossRevenueOTHours))%>%
+  ggplot(aes(x=reorder(LocationName,ot),y=ot,fill="darkred"))+geom_col()+
+  scale_y_continuous(breaks = seq(0,30000,by=2000),labels = paste(seq(0,30,2),"K"))+coord_flip() + theme(plot.subtitle = element_text(vjust = 1), 
+    plot.caption = element_text(vjust = 1), 
+    legend.position = "none")+xlab("LocationName")+ylab("OvertimeHours")+
+  ggtitle("Overtime Hours Distribution")
+```
+
+```{r, dpi=300}
+# density pot of age
+
+date=now()
+shifts$Birthday=ymd(shifts$Birthday)
+age = shifts %>%
+  mutate(Age = year(date) - year(Birthday))
+
+agegroup = age %>%
+  mutate (group=ifelse(Age<=10,"<10",
+                       ifelse(Age<=20,"10~20",
+                              ifelse(Age<=30,"20~30",
+                                     ifelse(Age<=40,"30~40",
+                                            ifelse(Age<=50,"40~50",
+                                                   ifelse(Age<=60,"50~60",
+                                                          ifelse(Age<=70,"60~70",
+                                                              ifelse(Age<=80,"70~80",
+                                                                     ifelse(Age<=90,"80~90",
+                                                 ifelse(Age<=100,"90~100",">100")))))))))))
+agegroup$group=as.factor(agegroup$group)
+levage=levels(agegroup$group)
+levage
+levage=levage[c(1,3:11,2)]
+agegroup$group=factor(agegroup$group,levels=levage)
+agesum=agegroup %>%
+  group_by(group)%>%
+  summarise(num = n())
+
+ggplot(agesum,aes(x = group, y = num))+
+  geom_col()
+```
+
+```{r, dpi=300}
+# box plot of revenue by age
+
+ggplot(agegroup,aes(y=Revenue,x=group))+
+  geom_boxplot(width=0.5,
+               outlier.color = "red",
+               outlier.size = 2)+
+  xlab("Age Group")+
+  ggtitle("Revenue distribution by Age Group")
+```
+
+Profit and location analysis
+```{r, dpi=300}
+profit=agegroup %>%
+  mutate(profit=Revenue-!is.na(Labor)) %>%
+  group_by(LocationName) %>%
+  summarise(Profit = sum(profit))
+
+ggplot(profit, aes(x = reorder(LocationName, Profit), y = Profit))+
+  geom_col(fill = "darkred")+
+  ggtitle("Profit of Cities")+
+  theme_bw()+
+  scale_y_continuous(breaks = seq(0,5000000,by=1000000),labels=paste(seq(0,5000,1000),"K"))+
+  xlab("Location")+
+  coord_flip()
+```
