@@ -69,7 +69,7 @@ ui = fluidPage(
                          generates"),
         fluidRow(
         splitLayout(cellWidths=c("50%", "50%"),plotOutput(outputId = "cgmap", height=640,width=640),
-                plotOutput(outputId = "clientmap", height=640,width=640))),
+                plotOutput(outputId = "clientmap", height=610,width=610))),
         fluidRow(
           splitLayout(cellWidths=c("50%", "50%"),plotOutput(outputId = "distances", width=600),
                       plotOutput(outputId = "monthlyrevs", width=600))),
@@ -172,7 +172,7 @@ server <- function(input, output) {
     
   output$distances = (renderPlot({
     ggplot(data=filter(shifts(), LocationName==input$branch), aes(x=avgdist))+
-      geom_histogram(fill="violetred4")+
+      geom_histogram(fill="violetred4", color="grey")+
       ggtitle("Histogram of Average Distance Traveled by Caregivers")+
       xlab("Average Distance")+
       ylab("Count")+
@@ -181,7 +181,7 @@ server <- function(input, output) {
     }))
   output$monthlyrevs = (renderPlot({
     ggplot(data=filter(shifts(), LocationName==input$branch), aes(x=avgmonthlyrevcust))+
-      geom_histogram(fill="chartreuse4")+
+      geom_histogram(fill="chartreuse4", color="grey")+
       ggtitle("Histogram of Average Customer Monthly Revenue")+
       xlab("Average Revenue")+
       ylab("Count")+
@@ -193,7 +193,7 @@ server <- function(input, output) {
   
 output$comparison = renderPlot({
   ggplot(data=stats, aes(x=reorder(LocationName,`Average Distance`), y=`Average Distance`, fill=`Avg Monthly Caregiver Revenue`))+
-    geom_col(position = "dodge")+
+    geom_col(position = "dodge", color="grey")+
     xlab("Location Name")+
     ylab("Distance Traveled (Miles)")+
     ggtitle("Averege Distance Traveled by Caregivers")+
