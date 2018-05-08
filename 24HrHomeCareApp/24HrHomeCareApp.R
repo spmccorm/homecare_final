@@ -68,8 +68,8 @@ ui = fluidPage(
                          while the Customer graph shows the average monthly revenue that the customer
                          generates"),
         fluidRow(
-        splitLayout(cellWidths=c("50%", "50%"),plotOutput(outputId = "cgmap", height=640,width=640),
-                plotOutput(outputId = "clientmap", height=610,width=610))),
+        splitLayout(cellWidths=c("50%", "50%"),plotOutput(outputId = "cgmap", height=620,width=620),
+                plotOutput(outputId = "clientmap", height=620,width=620))),
         fluidRow(
           splitLayout(cellWidths=c("50%", "50%"),plotOutput(outputId = "distances", width=600),
                       plotOutput(outputId = "monthlyrevs", width=600))),
