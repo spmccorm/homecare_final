@@ -238,10 +238,6 @@ shifts = shifts %>%
                                          ifelse(LocationName=="Culver City", "CulverCity",
                                          LocationName)))))
 
-locs = shifts %>%
-  group_by(Location) %>%
-  summarise(count = n())
-
 shifts = shifts %>%
   select(-LocationName)
 

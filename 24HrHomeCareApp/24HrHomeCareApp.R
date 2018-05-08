@@ -196,7 +196,7 @@ output$comparison = renderPlot({
     ylab("Distance Traveled (Miles)")+
     ggtitle("Averege Distance Traveled by Caregivers")+
     theme(plot.title = element_text(size = 20, family = "Calibri"))+
-      scale_fill_gradient(low="lightblue", high="darkblue")
+      scale_fill_gradient(low="red", high="blue")
   
 })
   
