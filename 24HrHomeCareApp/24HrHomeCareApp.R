@@ -39,7 +39,7 @@ sandiego = retry(qmap("San Diego, CA", zoom=11, maptype="hybrid"),maxErrors = 20
 carlsbad = retry(qmap("Carlsbad, CA", zoom=11, maptype="hybrid"),maxErrors = 20,sleep=1)
 walnutcreek = retry(qmap("Walnut Creek, CA", zoom=11, maptype="hybrid"),maxErrors = 20,sleep=1)
 santaclara = retry(qmap("Santa Clara, CA", zoom=11, maptype="hybrid"),maxErrors = 20,sleep=1)
-pasadena = retry(qmap("Pasadena, CA", zoom=11, maptype="hybrid"),maxErrors = 20,sleep=1)
+pasadena = retry(qmap("Pasadena, CA", zoom=10, maptype="hybrid"),maxErrors = 20,sleep=1)
 
 locationslist = shifts %>%
   group_by(LocationName) %>%
