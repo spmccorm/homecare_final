@@ -32,7 +32,7 @@ shifts%>%
 
 ```{r, dpi=300}
 # Revenue distribution by gender
-# Focus on revenue less than 800
+# Focus on revenue less than 500 for removing outliers
 genders = shifts %>%
   filter(shifts$Revenue < 500)
 
@@ -45,7 +45,7 @@ geom_histogram(binwidth = 20, position = "identity", alpha = 0.4)+
 ```{r, dpi=300}
 # heatmap: Revenue distribution by Location and Distance to travel
 group = shifts %>%
-  mutate (group=ifelse(Distance<=5,"<5",
+  mutate (age_range=ifelse(Distance<=5,"<5",
                        ifelse(Distance<=10,"5~10",
                               ifelse(Distance<=15,"10~15",
                                      ifelse(Distance<=20,"15~20",
@@ -54,36 +54,43 @@ group = shifts %>%
                                                           ifelse(Distance<=35,"30~35",
                                                               ifelse(Distance<=40,"35~40",
                                                  ifelse(Distance<=45,"40~45","45~50"))))))))))
-group$group=as.factor(group$group)
-lev=levels(group$group)
+group$age_range=as.factor(group$age_range)
+lev=levels(group$age_range)
 lev
 lev=lev[c(1,10,2:9)]
-group$group=factor(group$group,levels=lev)
+group$age_range=factor(group$age_range,levels=lev)
 sum=group %>%
-  group_by(group,LocationName)%>%
+  group_by(age_range,LocationName)%>%
   summarise(sum=sum(Revenue))
-ggplot(sum,aes(x=LocationName,y=factor(group)))+
+ggplot(sum,aes(x=LocationName,y=factor(age_range)))+
   geom_tile(aes(fill=sum))+
   scale_fill_gradient(low="white",high="#660000")+
   ylab("Distance to travel (mile)")+
   xlab("Location")+
-  ggtitle("Revenue by location and distance to travel")
+  ggtitle("Revenue by location and distance to travel")+
+  guides(fill=guide_legend(title="Total Revenue"))+
+  theme(text = element_text(size=10),
+        axis.text.x = element_text(angle=45, hjust=1))
 ```
 
 ```{r, dpi=300}
 # Overtime Hours by location
 
 shifts%>%
-  group_by(LocationName)%>%summarise(ot=sum(GrossRevenueOTHours))%>%
-  ggplot(aes(x=reorder(LocationName,ot),y=ot,fill="darkred"))+geom_col()+
+  group_by(LocationName)%>%
+  summarise(ot=sum(GrossRevenueOTHours))%>%
+  ggplot(aes(x=reorder(LocationName,ot),y=ot,fill="darkred"))+
+  geom_col()+
   scale_y_continuous(breaks = seq(0,30000,by=2000),labels = paste(seq(0,30,2),"K"))+coord_flip() + theme(plot.subtitle = element_text(vjust = 1), 
     plot.caption = element_text(vjust = 1), 
     legend.position = "none")+xlab("LocationName")+ylab("OvertimeHours")+
-  ggtitle("Overtime Hours Distribution")
+  ggtitle("Overtime Hours Distribution by Branch Location")+
+  theme(text = element_text(size=10),
+        axis.text.y = element_text(angle=45, hjust=1))
 ```
 
 ```{r, dpi=300}
-# density pot of age
+# histogram of customers' age
 
 date=now()
 shifts$Birthday=ymd(shifts$Birthday)
@@ -91,7 +98,7 @@ age = shifts %>%
   mutate(Age = year(date) - year(Birthday))
 
 agegroup = age %>%
-  mutate (group=ifelse(Age<=10,"<10",
+  mutate (age_bracket=ifelse(Age<=10,"<10",
                        ifelse(Age<=20,"10~20",
                               ifelse(Age<=30,"20~30",
                                      ifelse(Age<=40,"30~40",
@@ -101,42 +108,62 @@ agegroup = age %>%
                                                               ifelse(Age<=80,"70~80",
                                                                      ifelse(Age<=90,"80~90",
                                                  ifelse(Age<=100,"90~100",">100")))))))))))
-agegroup$group=as.factor(agegroup$group)
-levage=levels(agegroup$group)
-levage
-levage=levage[c(1,3:11,2)]
-agegroup$group=factor(agegroup$group,levels=levage)
-agesum=agegroup %>%
-  group_by(group)%>%
+agegroup$age_bracket=as.factor(agegroup$age_bracket)
+lev_age=levels(agegroup$age_bracket)
+lev_age
+lev_age=lev_age[c(1,3:11,2)]
+agegroup$age_bracket=factor(agegroup$age_bracket,levels=lev_age)
+age_sum=agegroup %>%
+  group_by(age_bracket)%>%
   summarise(num = n())
 
-ggplot(agesum,aes(x = group, y = num))+
-  geom_col()
+ggplot(age_sum,aes(x = age_bracket, y = num))+
+  geom_col()+
+  xlab("Age")+ylab("Counts")+
+  ggtitle("Customers' Age Distribution")
 ```
 
 ```{r, dpi=300}
 # box plot of revenue by age
 
-ggplot(agegroup,aes(y=Revenue,x=group))+
+ggplot(agegroup,aes(y=Revenue,x=age_bracket))+
   geom_boxplot(width=0.5,
                outlier.color = "red",
                outlier.size = 2)+
-  xlab("Age Group")+
+  xlab("Age")+
   ggtitle("Revenue distribution by Age Group")
 ```
 
 Profit and location analysis
 ```{r, dpi=300}
 profit=agegroup %>%
-  mutate(profit=Revenue-!is.na(Labor)) %>%
+  mutate(profitt=Revenue-!is.na(Labor)) %>%
   group_by(LocationName) %>%
-  summarise(Profit = sum(profit))
+  summarise(Profit = sum(profitt))
 
 ggplot(profit, aes(x = reorder(LocationName, Profit), y = Profit))+
   geom_col(fill = "darkred")+
-  ggtitle("Profit of Cities")+
+  ggtitle("Branch Profit")+
   theme_bw()+
   scale_y_continuous(breaks = seq(0,5000000,by=1000000),labels=paste(seq(0,5000,1000),"K"))+
   xlab("Location")+
-  coord_flip()
+  coord_flip()+
+  theme(text = element_text(size=10),
+        axis.text.y = element_text(angle=45, hjust=1))
+
+age1=age %>%
+  group_by(LocationName)%>%
+  summarise(avg_age=mean(Age))
+ggplot(age1, aes(x = reorder(LocationName, avg_age), y = avg_age, fill=avg_age))+
+  geom_col()+
+  scale_fill_gradient(low="white", high="darkred")+
+  ggtitle("Average Age by Location")+
+  theme_bw()+
+  xlab("Location")+
+  ylab("Average Age")+
+  coord_flip()+
+ # scale_y_continuous(limits = c(50,100))+
+  theme(text = element_text(size=10),
+        axis.text.y = element_text(angle=45, hjust=1))
+
 ```
