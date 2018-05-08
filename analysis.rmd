@@ -11,6 +11,7 @@ output: word_document
 library(dplyr)
 library(ggplot2)
 library(geosphere)
+library(lubridate)
 
 shifts = read.csv("shifts.csv")
 
