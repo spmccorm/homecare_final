@@ -199,7 +199,8 @@ output$comparison = renderPlot({
     ggtitle("Averege Distance Traveled by Caregivers")+
     theme(plot.title = element_text(size = 20, family = "Calibri"))+
       scale_fill_gradient(low="white", high="darkblue")+
-    theme_bw()
+    theme_bw()+
+    theme(plot.title = element_text(size = 20, family = "Calibri"))
   
 })
   
