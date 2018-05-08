@@ -41,13 +41,6 @@ walnutcreek = retry(qmap("Walnut Creek, CA", zoom=11, maptype="hybrid"),maxError
 santaclara = retry(qmap("Santa Clara, CA", zoom=11, maptype="hybrid"),maxErrors = 20,sleep=1)
 pasadena = retry(qmap("Pasadena, CA", zoom=11, maptype="hybrid"),maxErrors = 20,sleep=1)
 
-(santaclara + geom_point(data=filter(shifts, LocationName=="Santa Clara"), 
-                        aes(x=employeelon, y=employeelat,color
-                            = avgdist),
-                        size=2)+
-  scale_color_gradient(low = "white", high="violetred4", name="Avg. Distance")+
-  theme(legend.position = c(.11,.875)))
-
 locationslist = shifts %>%
   group_by(LocationName) %>%
   summarise(count = n())
@@ -81,7 +74,7 @@ ui = fluidPage(
 server <- function(input, output) {
   
   shifts = reactive({
-    shifts=read.csv("shifts.csv",fileEncoding = "UTF-8-BOM")
+    shifts=read.csv("shifts.csv")
   })
   
 
@@ -92,29 +85,29 @@ server <- function(input, output) {
    branchmap = switch(input$branch,
                        "Torrance"=torrance,
                        "Encino"=encino,
-                       "Santa Clara"=santaclara,
+                       "SantaClara"=santaclara,
                        "Carlsbad"=carlsbad,
-                       "Culver City"=culvercity,
+                       "CulverCity"=culvercity,
                        "Dallas"=dallas,
                        "Fullerton"=fullerton,
                        "Irvine"=irvine,
-                       "San Diego"=sandiego,
+                       "SanDiego"=sandiego,
                        "Scottsdale"=scottsdale,
                        "Pasadena"=pasadena,
-                       "Walnut Creek"=walnutcreek)
+                       "WalnutCreek"=walnutcreek)
    cgtitle = switch(input$branch,
                           "Torrance"="Torrance Caregiver Locations",
                           "Encino"="Encino Caregiver Locations",
-                          "Santa Clara"="Santa Clara Caregiver Locations",
+                          "SantaClara"="Santa Clara Caregiver Locations",
                           "Carlsbad"="Carlsbad Caregiver Locations",
-                          "Culver City"="Culver City Caregiver Locations",
+                          "CulverCity"="Culver City Caregiver Locations",
                           "Dallas"="Dallas Caregiver Locations",
                           "Fullerton"="Fullerton Caregiver Locations",
                           "Irvine"="Irvine Caregiver Locations",
-                          "San Diego"="San Diego Caregiver Locations",
+                          "SanDiego"="San Diego Caregiver Locations",
                           "Scottsdale"="Scottsdale Caregiver Locations",
                           "Pasadena"="Pasadena Caregiver Locations",
-                          "Walnut Creek"="Walnut Creek Caregiver Locations")
+                          "WalnutCreek"="Walnut Creek Caregiver Locations")
    
   
 
@@ -135,30 +128,30 @@ server <- function(input, output) {
     branchmap = switch(input$branch,
                        "Torrance"=torrance,
                        "Encino"=encino,
-                       "Santa Clara"=santaclara,
+                       "SantaClara"=santaclara,
                        "Carlsbad"=carlsbad,
-                       "Culver City"=culvercity,
+                       "CulverCity"=culvercity,
                        "Dallas"=dallas,
                        "Fullerton"=fullerton,
                        "Irvine"=irvine,
-                       "San Diego"=sandiego,
+                       "SanDiego"=sandiego,
                        "Scottsdale"=scottsdale,
                        "Pasadena"=pasadena,
-                       "Walnut Creek"=walnutcreek)
+                       "WalnutCreek"=walnutcreek)
     
     customertitle = switch(input$branch,
                        "Torrance"="Torrance Customer Locations",
                        "Encino"="Encino Customer Locations",
-                       "Santa Clara"="Santa Clara Customer Locations",
+                       "SantaClara"="Santa Clara Customer Locations",
                        "Carlsbad"="Carlsbad Customer Locations",
-                       "Culver City"="Culver City Customer Locations",
+                       "CulverCity"="Culver City Customer Locations",
                        "Dallas"="Dallas Customer Locations",
                        "Fullerton"="Fullerton Customer Locations",
                        "Irvine"="Irvine Customer Locations",
-                       "San Diego"="San Diego Customer Locations",
+                       "SanDiego"="San Diego Customer Locations",
                        "Scottsdale"="Scottsdale Customer Locations",
                        "Pasadena"="Pasadena Customer Locations",
-                       "Walnut Creek"="Walnut Creek Customer Locations")
+                       "WalnutCreek"="Walnut Creek Customer Locations")
     
     (branchmap + geom_point(data=filter(shifts(), LocationName==input$branch), 
                            aes(x=customerlon, y=customerlat,color = avgmonthlyrev),

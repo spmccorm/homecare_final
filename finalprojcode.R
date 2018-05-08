@@ -42,6 +42,7 @@ shifts$EmployeeStreetAddr1 = as.character(shifts$EmployeeStreetAddr1)
 shifts$EmployeeStateCode = as.character(shifts$EmployeeStateCode)
 shifts$EmployeePostalCode = as.character(shifts$EmployeePostalCode)
 
+
 caregivers = caregivers %>%
   unite(col = "cgfulladdress", c(EmployeeStreetAddr1,
                                  EmployeeCityName,
@@ -65,6 +66,7 @@ customers = customers %>%
 names(shifts)[21] = paste("LocationKey")
 shifts = shifts %>%
   left_join(x=shifts, y=locations, by = "LocationKey")
+shifts$LocationName = as.character(shifts$LocationName)
 
 # Connecting customer information to shift table
 shifts = shifts %>%
@@ -216,6 +218,25 @@ shifts = shifts %>%
 
 shifts = shifts %>%
   mutate(avgmonthlyrev = (customerLTV/lengthofstay)*30)
+
+shifts = shifts %>%
+  mutate(Location = ifelse(LocationName=="Walnut Creek","WalnutCreek",
+                           ifelse(LocationName=="Santa Clara", "SantaClara",
+                                  ifelse(LocationName=="San Diego", "SanDiego",
+                                         ifelse(LocationName=="Culver City", "CulverCity",
+                                         LocationName)))))
+
+locs = shifts %>%
+  group_by(Location) %>%
+  summarise(count = n())
+
+shifts = shifts %>%
+  select(-LocationName)
+
+names(shifts)[57] = paste("LocationName")
+
+santaclarashifts = shifts %>%
+  filter(LocationName=="SantaClara")
 
 # Export shift data for use in applications and analysis script
 
