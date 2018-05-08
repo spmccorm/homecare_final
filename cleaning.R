@@ -243,9 +243,6 @@ shifts = shifts %>%
 
 names(shifts)[59] = paste("LocationName")
 
-santaclarashifts = shifts %>%
-  filter(LocationName=="SantaClara")
-
 # Export shift data for use in applications and analysis script
 
 write.csv(shifts, "shifts.csv")
