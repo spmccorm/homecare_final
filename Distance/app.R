@@ -46,6 +46,11 @@ locationslist = shifts %>%
   summarise(count = n())
 locationslist$LocationName = as.character(locationslist$LocationName)
 
+stats = shifts %>%
+  group_by(LocationName) %>%
+  summarise(`Average Distance` = mean(avgdist), `Avg Monthly Caregiver Revenue` = mean(avgmonthlyrevcg))
+
+
 ui = fluidPage(
   titlePanel(title= "24Hr HomeCare Statistical Visualizations",
              windowTitle="24HrHomeCareStats"),
@@ -155,7 +160,7 @@ server <- function(input, output) {
                        "WalnutCreek"="Walnut Creek Customer Locations")
     
     (branchmap + geom_point(data=filter(shifts(), LocationName==input$branch), 
-                           aes(x=customerlon, y=customerlat,color = avgmonthlyrev),
+                           aes(x=customerlon, y=customerlat,color = avgmonthlyrevcust),
                            size=3)+
       scale_color_gradient(low = "white", high="chartreuse4", name="Avg. Monthly Rev")+
       theme(legend.position = c(.11,.875))+
@@ -174,7 +179,7 @@ server <- function(input, output) {
       theme(plot.title = element_text(size = 20, family = "Calibri"))
     }))
   output$monthlyrevs = (renderPlot({
-    ggplot(data=filter(shifts(), LocationName==input$branch), aes(x=avgmonthlyrev))+
+    ggplot(data=filter(shifts(), LocationName==input$branch), aes(x=avgmonthlyrevcust))+
       geom_histogram(fill="chartreuse4")+
       ggtitle("Histogram of Average Customer Monthly Revenue")+
       xlab("Average Revenue")+
@@ -182,9 +187,16 @@ server <- function(input, output) {
       theme(plot.title = element_text(size = 20, family = "Calibri"))
   }))
 
+  
+  
 output$comparison = renderPlot({
-  ggplot(data=shifts(), aes(x=LocationName, y=mean(avgdist), z=mean(cgLTV)))+
-    geom_bar(position = "dodge")
+  ggplot(data=stats, aes(x=reorder(LocationName,`Average Distance`), y=`Average Distance`, fill=`Avg Monthly Caregiver Revenue`))+
+    geom_col(position = "dodge")+
+    xlab("Location Name")+
+    ylab("Distance Traveled (Miles)")+
+    ggtitle("Averege Distance Traveled by Caregivers")+
+    theme(plot.title = element_text(size = 20, family = "Calibri"))+
+      scale_fill_gradient(low="lightblue", high="darkblue")
   
 })
   

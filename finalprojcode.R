@@ -196,28 +196,40 @@ cgLTV=shifts %>%
 shifts = shifts %>%
   left_join(x=shifts, y=cgLTV, by="EmployeeKey")
 
-customerLTV= shifts %>%
+customersLTV= shifts %>%
   group_by(CustomerKey) %>%
   summarise(customerLTV=sum(Revenue))
 
 shifts = shifts %>%
-  left_join(x=shifts, y=customerLTV, by="CustomerKey")
+  left_join(x=shifts, y=customersLTV, by="CustomerKey")
 
 #calculating length of stay in order to derive average monthly revenue
 
-lengthofstay = shifts %>%
+lengthofstaycustomers = shifts %>%
   group_by(CustomerKey) %>%
   summarise(startdate = min(DateKeyService), enddate = max(DateKeyService)) %>%
-  mutate(lengthofstay = as.numeric(enddate - startdate +1)) %>%
-  select(CustomerKey, lengthofstay)
+  mutate(lengthofstaycustomer = as.numeric(enddate - startdate +1)) %>%
+  select(CustomerKey, lengthofstaycustomer)
 
 shifts = shifts %>%
-  left_join(x=shifts, y=lengthofstay, by = "CustomerKey")
+  left_join(x=shifts, y=lengthofstaycustomers, by = "CustomerKey")
 
-#calculating average monthly revenue per customer
+lengthofstaycaregivers =shifts %>%
+  group_by(EmployeeKey)%>%
+  summarise(startdate = min(DateKeyService), enddate = max(DateKeyService)) %>%
+  mutate(lengthofstaycg = as.numeric(enddate - startdate +1)) %>%
+  select(EmployeeKey,lengthofstaycg)
 
 shifts = shifts %>%
-  mutate(avgmonthlyrev = (customerLTV/lengthofstay)*30)
+  left_join(x=shifts, y=lengthofstaycaregivers, by ="EmployeeKey")
+
+#calculating average monthly revenue per customer and cg
+
+shifts = shifts %>%
+  mutate(avgmonthlyrevcust = (customerLTV/lengthofstaycustomer)*30)
+
+shifts = shifts %>%
+  mutate(avgmonthlyrevcg = (cgLTV/lengthofstaycg)*30)
 
 shifts = shifts %>%
   mutate(Location = ifelse(LocationName=="Walnut Creek","WalnutCreek",
@@ -233,7 +245,7 @@ locs = shifts %>%
 shifts = shifts %>%
   select(-LocationName)
 
-names(shifts)[57] = paste("LocationName")
+names(shifts)[59] = paste("LocationName")
 
 santaclarashifts = shifts %>%
   filter(LocationName=="SantaClara")
