@@ -67,7 +67,8 @@ ui = fluidPage(
                 plotOutput(outputId = "clientmap", height=640,width=640))),
         fluidRow(
           splitLayout(cellWidths=c("50%", "50%"),plotOutput(outputId = "distances"),
-                      plotOutput(outputId = "monthlyrevs")))
+                      plotOutput(outputId = "monthlyrevs"))),
+        plotOutput(outputId = "comparison")
    ))
 )
 
@@ -114,7 +115,7 @@ server <- function(input, output) {
 (branchmap + geom_point(data=filter(shifts(), LocationName==input$branch), 
                            aes(x=employeelon, y=employeelat,color
                            = avgdist),
-                           size=2)+
+                           size=3)+
       scale_color_gradient(low = "white", high="violetred4", name="Avg. Distance")+
       theme(legend.position = c(.11,.875))+
       ggtitle(cgtitle)+
@@ -155,7 +156,7 @@ server <- function(input, output) {
     
     (branchmap + geom_point(data=filter(shifts(), LocationName==input$branch), 
                            aes(x=customerlon, y=customerlat,color = avgmonthlyrev),
-                           size=2)+
+                           size=3)+
       scale_color_gradient(low = "white", high="chartreuse4", name="Avg. Monthly Rev")+
       theme(legend.position = c(.11,.875))+
       ggtitle(customertitle)+
@@ -169,15 +170,23 @@ server <- function(input, output) {
       geom_histogram(fill="violetred4")+
       ggtitle("Histogram of Average Distance Traveled by Caregivers")+
       xlab("Average Distance")+
-      ylab("Count")
+      ylab("Count")+
+      theme(plot.title = element_text(size = 20, family = "Calibri"))
     }))
   output$monthlyrevs = (renderPlot({
     ggplot(data=filter(shifts(), LocationName==input$branch), aes(x=avgmonthlyrev))+
       geom_histogram(fill="chartreuse4")+
       ggtitle("Histogram of Average Customer Monthly Revenue")+
       xlab("Average Revenue")+
-      ylab("Count")
+      ylab("Count")+
+      theme(plot.title = element_text(size = 20, family = "Calibri"))
   }))
+
+output$comparison = renderPlot({
+  ggplot(data=shifts(), aes(x=LocationName, y=mean(avgdist), z=mean(cgLTV)))+
+    geom_bar(position = "dodge")
+  
+})
   
     }
 
