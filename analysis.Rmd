@@ -1,0 +1,241 @@
+---
+title: "Data Analysis and Visualization"
+author: "Team5"
+date: "May 6, 2018"
+output: word_document
+---
+Analyze what people are talking about "homecare" on Twitter. This might be helpful for us to find out what's important in this industry.
+```{r, dpi=300, warning=F}
+# set up twitter authentication
+library(twitteR)
+api_key = "CBmxB5BVLxBBHZJjnXf5aHRJY"
+api_secret = "fJMaz22l97EZmIlWDKi3ERSyCONrjYU2MP1CLaOwQcUqLnqmsR"
+access_token = "2173535746-OSlgJoWyh9pfB02pdyhQegZ2dcjR7ctbtqDo0O8"
+access_token_secret = "Kyi326mBG7uWXQJ4r2KEfJPztrptuiq2gxiIG2DBziOUx"
+
+setup_twitter_oauth(api_key, api_secret, access_token, access_token_secret)
+
+### search for tweets about USC
+homecareTweets = searchTwitter("homecare", n=500)
+homecareTweetsDF = twListToDF(homecareTweets)
+
+### what are they tweeting about
+library(tm)
+library(stringr)
+library(wordcloud)
+library(dplyr)
+library(ggplot2)
+
+# clean the tweets and then visualize them using a wordcloud
+nohandles = str_replace_all(homecareTweetsDF$text, pattern = "@\\w+", replacement = "")
+
+# these coding can applied to any words
+wordCorpus = Corpus(VectorSource(nohandles))%>%
+  tm_map(removePunctuation) %>%
+  tm_map(content_transformer(tolower)) %>%
+  tm_map(removeWords, stopwords("english")) %>%
+  tm_map(stripWhitespace)
+
+pal = brewer.pal(9, "YlGnBu") 
+display.brewer.pal(9, "YlGnBu")
+
+pal = pal[-(1:4)]
+set.seed(500)
+
+wordcloud(words = wordCorpus, random.order = FALSE, colors = pal)
+```
+
+We can see that "jobs", "caregivers", "hiring", "apply" are frequently mentioned in the word cloud. There's clearly a huge demand for caregivers in this market. In fact, a primary factor limiting growth in the homecare industry is the supply of caregivers available to staff shifts with clients, which is why this project will focus on analyzing the relationship between customers and caregivers. 
+
+Calculating Lifetime Value of Customers and Caregivers
+```{r, dpi=300, warning=F}
+library(dplyr)
+library(ggplot2)
+library(geosphere)
+library(lubridate)
+
+shifts = read.csv("shifts.csv")
+
+shifts = shifts %>% 
+  mutate(Distance = distHaversine(p1 = cbind(shifts$employeelon, shifts$employeelat), 
+                       p2=cbind(shifts$customerlon,shifts$customerlat))*0.000621371) %>%
+  filter(Distance < 50)
+
+cgdistance = shifts %>%
+  group_by(EmployeeKey) %>%
+  summarise(avgdist = mean(Distance))
+
+shifts = shifts %>%
+  left_join(x=shifts, y=cgdistance, by= "EmployeeKey")
+
+cgvalue=shifts %>%
+  group_by(EmployeeKey) %>%
+  summarise(cgtotalvalue=sum(Revenue))
+
+shifts = shifts %>%
+  left_join(x=shifts, y=cgvalue, by="EmployeeKey")
+
+cusvalue= shifts %>%
+  group_by(CustomerKey) %>%
+  summarise(custotalvalue=sum(Revenue))
+
+shifts = shifts %>%
+  left_join(x=shifts, y=cusvalue, by="CustomerKey")
+```
+
+
+Histogram: Revenue distribution of different locations
+```{r, dpi=300}
+shifts%>%
+  group_by(LocationName)%>%
+  ggplot(aes(x=Revenue,y=..density..))+
+  geom_histogram(bins=20,position = "identity")+facet_wrap(~LocationName)+
+  xlim(0,400)+ylab("")+geom_line(stat = "density",adjust=0.25,col="#756bb1")+
+  ggtitle("Revenue Distribution of Different Branches")+
+  theme_bw()
+```
+
+Revenue distribution by gender
+Focus on revenue less than 500, as revenue higher than 500 just occur in few cases
+```{r, dpi=300}
+genders = shifts %>%
+  filter(shifts$Revenue < 500)
+
+ggplot(genders, aes(x = Revenue, fill = genders$CustomerGender)) +
+geom_histogram(binwidth = 20, position = "identity", alpha = 0.7)+
+  scale_fill_manual(values = c("#bcbddc", "#4a1486"))+
+  ggtitle("Distribution of Revenues by Genders") + theme(plot.subtitle = element_text(vjust = 1), 
+    plot.caption = element_text(vjust = 1)) +labs(fill = "Customer Gender")+
+  theme_bw()
+```
+
+Heatmap: Revenue distribution by Location and Distance to travel
+```{r, dpi=300}
+group = shifts %>%
+  mutate (group=ifelse(Distance<=5,"<5",
+                       ifelse(Distance<=10,"5~10",
+                              ifelse(Distance<=15,"10~15",
+                                     ifelse(Distance<=20,"15~20",
+                                            ifelse(Distance<=25,"20~25",
+                                                   ifelse(Distance<=30,"25~30",
+                                                          ifelse(Distance<=35,"30~35",
+                                                              ifelse(Distance<=40,"35~40",
+                                                 ifelse(Distance<=45,"40~45","45~50"))))))))))
+group$group=as.factor(group$group)
+lev=levels(group$group)
+lev
+lev=lev[c(1,10,2:9)]
+group$group=factor(group$group,levels=lev)
+sum=group %>%
+  group_by(group,LocationName)%>%
+  summarise(sum=sum(Revenue))
+ggplot(sum,aes(x=LocationName,y=factor(group)))+
+  geom_tile(aes(fill=sum))+
+  scale_fill_gradient(low="white",high="#4a1486")+
+  ylab("Distance to travel (mile)")+
+  xlab("Location")+
+  ggtitle("Revenue by Location and Distance to Travel")+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+Services provided for each age
+```{r, dpi=300}
+date=now()
+shifts$Birthday=ymd(shifts$Birthday)
+age = shifts %>%
+  mutate(Age = year(date) - year(Birthday))
+
+agegroup = age %>%
+  mutate (group=ifelse(Age<=10,"<10",
+                       ifelse(Age<=20,"10~20",
+                              ifelse(Age<=30,"20~30",
+                                     ifelse(Age<=40,"30~40",
+                                            ifelse(Age<=50,"40~50",
+                                                   ifelse(Age<=60,"50~60",
+                                                          ifelse(Age<=70,"60~70",
+                                                              ifelse(Age<=80,"70~80",
+                                                                     ifelse(Age<=90,"80~90",
+                                                 ifelse(Age<=100,"90~100",">100")))))))))))
+agegroup$group=as.factor(agegroup$group)
+levage=levels(agegroup$group)
+levage
+levage=levage[c(1,3:11,2)]
+agegroup$group=factor(agegroup$group,levels=levage)
+agesum=agegroup %>%
+  group_by(group)%>%
+  summarise(num = n())
+
+ggplot(agesum,aes(x = group, y = num, fill = "group"))+
+  geom_col(fill = "#4a1486")+
+  xlab ("Age Group")+
+  ylab("")+
+  ggtitle("Number of Services Provided for Each Age Group")+
+  theme_bw()
+```
+
+Box plot of revenue by age
+```{r, dpi=300}
+ggplot(agegroup,aes(y=Revenue,x=group))+
+  geom_boxplot(width=0.5,
+               outlier.color = "#4a1486",
+               outlier.size = 1)+
+  xlab("Age Group")+
+  ggtitle("Revenue Distribution by Age Group")+
+  theme_bw()
+```
+
+Profit and Labor Cost by age
+```{r, dpi=300}
+profit=agegroup %>%
+  mutate(Profit=Revenue-!is.na(Labor))
+profit = profit %>%
+  filter(!is.na(Profit))
+library(tidyr)
+g_profit=profit %>%
+  select(Labor, Profit,Age, group)
+g_profit=g_profit %>%
+  gather(Labor:Profit,key="item",value="value")
+
+g_profit=g_profit %>%
+  group_by(group,item) %>%
+  summarise(value=sum(value))
+
+levprofit=levels(as.factor(g_profit$item))
+levprofit=levprofit[c(2,1)]
+g_profit$item=factor(g_profit$item, levels=levprofit)
+
+ggplot(g_profit, aes(x = group, y=value, fill = item)) +
+geom_col()+
+  ggtitle("Distribution of Profit and Labor Cost by Age Group")+
+  scale_y_continuous(breaks = seq(0,10000000,by=5000000),labels = paste(seq(0,10000,5000),"K"))+
+  xlab("Age Group")+
+  scale_fill_manual(values = c("#4a1486","#bcbddc"))+
+  ylab("Total $ Amount")+
+  theme_bw()
+```
+
+Profit and location analysis
+```{r, dpi=300}
+loc_profit=profit %>%
+  mutate(Profitability = Profit/Revenue) %>%
+  group_by(LocationName) %>%
+  summarise(Profitability = mean(Profitability))
+
+ggplot(loc_profit, aes(x = reorder(LocationName, Profitability), y = Profitability))+
+  geom_col(fill = "#4a1486")+
+  ggtitle("Profitability of Branches")+
+  theme_bw()+
+  scale_y_continuous(breaks = seq(0,1,by=0.1),labels=paste(seq(0,1,0.1)))+
+  xlab("Location")+
+  coord_flip()
+```
+
+
+
+
+
+
+
+
+
+
